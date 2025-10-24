@@ -56,10 +56,10 @@ const COLOR_MAP = {
 };
 
 
-// 💡 変更: サーバーとクライアント間で共通利用のため MazeGenerator は残す
+// 💡 変更なし
 class MazeGenerator {
     static generate(width, height, startCoords, goalCoords) {
-        // 既存の MazeGenerator.generate の内容をそのまま残します。
+        // ... (既存の MazeGenerator.generate の内容をそのまま残します) ...
         const GRID_WIDTH = width;
         const GRID_HEIGHT = height;
 
@@ -140,32 +140,26 @@ class MazeGenerator {
 }
 
 
-// 💡 変更: Playerクラスはサーバーから送られてきたデータを受け取るコンテナとして簡素化
+// 💡 変更なし
 class Player {
-    // サーバーから送られてきたデータ構造に合わせる
     constructor(data) {
         this.id = data.id; 
         this.x = data.x;
         this.y = data.y;
         this.color = data.color;
         this.isGoal = data.isGoal;
-        // Setの復元が必要
         this.visitedCells = new Set(data.visitedCells || []); 
     }
     
-    // クライアント側では移動判定を行わず、サーバーからの情報更新のみを行う
     update(data) {
         this.x = data.x;
         this.y = data.y;
         this.isGoal = data.isGoal;
         this.visitedCells = new Set(data.visitedCells || []); 
     }
-    
-    // 移動はサーバーに委譲するため、move, isAtGoal メソッドは削除または簡素化
-    // ただし、移動後の通過セル記録はサーバーが担当するため、クライアント側の移動関連メソッドは不要
 }
 
-// 迷路クラス (変更なし)
+// 💡 変更なし
 class Maze {
     constructor(data) {
         this.width = data.width;
@@ -176,11 +170,9 @@ class Maze {
 
         if (data.walls && Array.isArray(data.walls)) {
             data.walls.forEach(wall => {
-                // 壁データをサーバーから受け取る際は、x, yがオブジェクトになっている
                 if (typeof wall === 'object' && wall !== null) {
                     this.walls.add(`${wall.x},${wall.y}`);
                 } else {
-                    // サーバーから配列形式で受け取る場合も考慮
                     this.walls.add(wall);
                 }
             });
@@ -195,7 +187,7 @@ class Maze {
     }
 }
 
-// ゲームクラス (大幅変更)
+// ゲームクラス 
 class MazeGame {
     constructor() {
         this.currentScreen = 'title';
@@ -204,7 +196,6 @@ class MazeGame {
         this.playerId = null; // 自身のプレイヤーID (サーバーから割り当て)
         this.socket = null; // WebSocket接続
 
-        // 💡 変更: キャンバスを自分視点とミニマップの2つに集約
         this.myCanvas = null;
         this.myCtx = null;
         this.minimapCanvas = null;
@@ -212,12 +203,12 @@ class MazeGame {
         
         this.mazeSize = 45; 
         this.pViewSize = 5; 
-        this.pCellSize = 450 / this.pViewSize; // 90px
-        this.mCellSize = 450 / this.mazeSize; // 10px (450/45=10)
+        this.pCellSize = 450 / this.pViewSize; 
+        this.mCellSize = 450 / this.mazeSize; 
         
         this.gamepadInterval = null;
         this.moveDelay = 150; 
-        this.lastMoveTime = 0; // 自身の移動時間のみ管理
+        this.lastMoveTime = 0; 
         this.moveThreshold = 0.5; 
 
         this.init();
@@ -231,7 +222,6 @@ class MazeGame {
     }
     
     initAudio() {
-        // ... (既存の initAudio ロジックは変更なし) ...
         const audioInitHandler = () => {
             if (!audioCtx) {
                 try {
@@ -258,48 +248,57 @@ class MazeGame {
     }
 
     setupEventListeners() {
-        // 💡 タイトル画面のボタンを接続処理に変更
+        // 💡 修正: アロー関数で囲み、thisの参照をMazeGameインスタンスに固定する
         document.getElementById('create-room-button').addEventListener('click', () => {
             this.showConnectionModal('host');
         });
         document.getElementById('join-room-button').addEventListener('click', () => {
             this.showConnectionModal('guest');
         });
-
-        // 💡 接続モーダルのイベント
         document.getElementById('connect-submit').addEventListener('click', () => {
             this.connectToServer();
         });
         document.getElementById('connection-cancel').addEventListener('click', () => {
             this.hideConnectionModal();
         });
-
         document.getElementById('back-to-title').addEventListener('click', () => {
             this.disconnectServer();
         });
-
         document.getElementById('back-to-select-clear').addEventListener('click', () => {
             this.disconnectServer();
         });
         
+        document.getElementById('lobby-disconnect-button').addEventListener('click', () => {
+            this.disconnectServer();
+        });
+
+        document.getElementById('start-game-button').addEventListener('click', () => {
+            this.sendStartGameRequest();
+        });
+        
         window.addEventListener("gamepadconnected", (e) => this.updateGamepadStatus());
         window.addEventListener("gamepaddisconnected", (e) => this.updateGamepadStatus());
-        
-        // 💡 キーボードイベントを追加
         window.addEventListener('keydown', (e) => this.handleKeyboardInput(e));
     }
     
-    // 💡 接続モーダルの表示/非表示ロジック
+    // 💡 接続モーダルの表示/非表示ロジック (変更なし)
     showConnectionModal(type) {
         const modal = document.getElementById('connection-modal');
         const title = document.getElementById('connection-title');
         const ipInput = document.getElementById('server-ip');
         const submitButton = document.getElementById('connect-submit');
+        const portInput = document.getElementById('server-port');
 
         this.isHost = (type === 'host');
         title.textContent = this.isHost ? '部屋を作成 (ホスト)' : '部屋に参加 (ゲスト)';
         submitButton.textContent = this.isHost ? '部屋を作成' : '接続して参加';
-        ipInput.value = ipInput.value || (this.isHost ? 'localhost' : ''); // デフォルトIP
+        ipInput.value = ipInput.value || (this.isHost ? 'localhost' : ''); 
+
+        if (this.isHost) {
+             portInput.value = 8080;
+        } else if (!portInput.value) {
+             portInput.value = 8080; 
+        }
 
         document.getElementById('title-screen').classList.remove('active');
         modal.classList.add('active');
@@ -309,158 +308,27 @@ class MazeGame {
         document.getElementById('connection-modal').classList.remove('active');
         document.getElementById('title-screen').classList.add('active');
     }
-
-    // 💡 サーバーへの接続
-    connectToServer() {
-        const ip = document.getElementById('server-ip').value || 'localhost';
-        const port = 8080; // 固定
-        
-        if (this.socket) this.socket.close();
-
-        const url = `ws://${ip}:${port}`;
-        this.socket = new WebSocket(url);
-        
-        this.socket.onopen = () => {
-            console.log('サーバーに接続しました。');
-            this.hideConnectionModal();
-            document.getElementById('connection-status').textContent = '接続中...';
-            document.getElementById('connection-status').style.color = '#FF9800';
-
-            // サーバーに部屋の作成/参加を要求
-            if (this.isHost) {
-                this.socket.send(JSON.stringify({ type: 'CREATE_ROOM' }));
-            } else {
-                this.socket.send(JSON.stringify({ type: 'JOIN_ROOM' }));
-            }
-        };
-
-        this.socket.onmessage = (event) => {
-            this.handleServerMessage(JSON.parse(event.data));
-        };
-
-        this.socket.onerror = (e) => {
-            console.error('WebSocketエラー:', e);
-            document.getElementById('connection-status').textContent = '接続失敗';
-            document.getElementById('connection-status').style.color = '#F44336';
-            this.socket = null;
-            alert('サーバーへの接続に失敗しました。IPとポートを確認してください。');
-            this.showScreen('title');
-        };
-
-        this.socket.onclose = () => {
-            console.log('サーバーとの接続が切れました。');
-            this.socket = null;
-            if (this.currentScreen === 'game') {
-                 alert('サーバーとの接続が切れました。タイトルに戻ります。');
-            }
-            this.showScreen('title');
-        };
-    }
     
-    // 💡 サーバー切断処理
-    disconnectServer() {
-        if (this.socket) {
-            this.socket.close();
-        }
-        this.showScreen('title');
-    }
-
-    // 💡 サーバーからのメッセージ処理
-    handleServerMessage(data) {
-        switch (data.type) {
-            case 'ROOM_READY':
-                this.playerId = data.yourId;
-                this.maze = new Maze(data.mazeData); // サーバーから迷路データを受け取る
-                // 自身の初期データを受け取り、playersに追加
-                this.players[this.playerId] = new Player(data.players); 
-                
-                // キャンバスを取得
-                this.myCanvas = document.getElementById('my-canvas');
-                this.myCtx = this.myCanvas.getContext('2d');
-                this.minimapCanvas = document.getElementById('minimap-canvas');
-                this.minimapCtx = this.minimapCanvas.getContext('2d');
-                
-                // UIを更新
-                document.getElementById('my-view-title').textContent = `${this.playerId} (YOUR VIEW: 5x5)`;
-                document.getElementById('connection-status').textContent = `ゲーム中 (${this.playerId})`;
-                document.getElementById('connection-status').style.color = this.players[this.playerId].color;
-
-                this.showScreen('game');
-                this.render();
-                break;
-            case 'GAME_STATE_UPDATE':
-                // 全プレイヤーの状態を更新
-                for (const id in data.players) {
-                    if (this.players[id]) {
-                        this.players[id].update(data.players[id]);
-                    } else {
-                        // 新しいプレイヤーが参加した
-                        this.players[id] = new Player(data.players[id]);
-                    }
-                }
-                // サーバーから送られてこなかったプレイヤーを削除 (切断したプレイヤー)
-                for (const id in this.players) {
-                    if (!data.players[id]) {
-                        delete this.players[id];
-                    }
-                }
-                
-                this.render();
-                this.updatePlayerStatus();
-                break;
-            case 'WINNER':
-                if (!this.players[data.winnerId].isGoal) {
-                    this.players[data.winnerId].isGoal = true; // 状態を確定させる
-                    this.completeLevel(data.winnerId);
-                }
-                break;
-            case 'ERROR':
-                alert(`エラー: ${data.message}`);
-                this.disconnectServer();
-                break;
-        }
-    }
-    
-    showScreen(screenName) {
-        // ... (既存の showScreen ロジックは変更なし) ...
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
-        document.getElementById(`${screenName}-screen`).classList.add('active');
-        this.currentScreen = screenName;
-        
-        if (screenName === 'title') {
-            document.getElementById('create-room-button').focus();
-        } else if (screenName === 'clear') {
-            document.getElementById('back-to-select-clear').focus();
-        } else {
-            document.activeElement.blur();
-        }
-        
-        this.updateGamepadStatus();
-    }
-    
-    // 💡 サーバーへの移動要求
-    requestMove(dx, dy) {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN && this.playerId) {
-            // サーバーに移動を要求
+    sendStartGameRequest() {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN && this.isHost) {
             this.socket.send(JSON.stringify({
-                type: 'MOVE',
-                dx: dx,
-                dy: dy
+                type: 'START_GAME' 
             }));
-            // サーバーが処理する間にクライアント側で音を鳴らしておく
-            const myPlayer = this.players[this.playerId];
-            if (this.maze.isWall(myPlayer.x + dx, myPlayer.y + dy)) {
-                 playSound('hit');
-            } else {
-                 playSound('move');
-            }
+            document.getElementById('start-game-button').disabled = true;
+            document.getElementById('lobby-message').textContent = "ゲーム開始要求を送信しました。";
         }
     }
 
-    // 💡 キーボード入力処理の追加
     handleKeyboardInput(event) {
+        if (this.currentScreen === 'lobby' && this.isHost && event.code === 'Enter') {
+            const startButton = document.getElementById('start-game-button');
+            if (startButton && startButton.style.display !== 'none' && !startButton.disabled) {
+                this.sendStartGameRequest();
+            }
+            event.preventDefault();
+            return;
+        }
+
         if (this.currentScreen !== 'game' || !this.playerId || !this.players[this.playerId] || this.players[this.playerId].isGoal) return;
 
         let dx = 0, dy = 0;
@@ -492,6 +360,210 @@ class MazeGame {
 
         this.requestMove(dx, dy);
     }
+    
+    connectToServer() {
+        const ip = document.getElementById('server-ip').value || 'localhost';
+        const port = document.getElementById('server-port').value || '8080'; 
+        
+        if (this.socket) this.socket.close();
+
+        const url = `ws://${ip}:${port}`;
+        this.socket = new WebSocket(url);
+        
+        this.socket.onopen = () => {
+            console.log('サーバーに接続しました。');
+            this.hideConnectionModal();
+            document.getElementById('connection-status').textContent = '接続中...';
+            document.getElementById('connection-status').style.color = '#FF9800';
+
+            if (this.isHost) {
+                this.socket.send(JSON.stringify({ type: 'CREATE_ROOM' }));
+            } else {
+                this.socket.send(JSON.stringify({ type: 'JOIN_ROOM' }));
+            }
+        };
+
+        this.socket.onmessage = (event) => {
+            this.handleServerMessage(JSON.parse(event.data));
+        };
+
+        this.socket.onerror = (e) => {
+            console.error('WebSocketエラー:', e);
+            document.getElementById('connection-status').textContent = '接続失敗';
+            document.getElementById('connection-status').style.color = '#F44336';
+            this.socket = null;
+            alert('サーバーへの接続に失敗しました。ホスト名とポート番号を確認してください。');
+            this.showScreen('title');
+        };
+
+        this.socket.onclose = () => {
+            console.log('サーバーとの接続が切れました。');
+            this.socket = null;
+            if (this.currentScreen === 'game' || this.currentScreen === 'lobby') {
+                 alert('サーバーとの接続が切れました。タイトルに戻ります。');
+            }
+            this.showScreen('title');
+        };
+    }
+    
+    disconnectServer() {
+        if (this.socket) {
+            this.socket.close();
+        }
+        this.showScreen('title');
+    }
+    
+    initGameCanvases() {
+        if (this.myCanvas && this.minimapCanvas) return true; 
+
+        this.myCanvas = document.getElementById('my-canvas');
+        this.minimapCanvas = document.getElementById('minimap-canvas');
+
+        if (!this.myCanvas || !this.minimapCanvas) {
+            console.error("致命的なエラー: キャンバス要素 (my-canvas, minimap-canvas) がDOMに見つかりませんでした。HTMLを確認してください。");
+            return false;
+        }
+
+        this.myCtx = this.myCanvas.getContext('2d');
+        this.minimapCtx = this.minimapCanvas.getContext('2d');
+
+        return true;
+    }
+
+
+    handleServerMessage(data) {
+        switch (data.type) {
+            case 'ROOM_READY':
+                this.playerId = data.yourId;
+                this.players[this.playerId] = new Player(data.players); 
+
+                this.showScreen('lobby');
+                this.updateLobbyStatus(data.players);
+                break;
+            
+            case 'LOBBY_UPDATE':
+                this.updateLobbyStatus(data.players);
+                break;
+
+            case 'GAME_START':
+                this.maze = new Maze(data.mazeData); 
+
+                if (!this.initGameCanvases()) {
+                    alert("ゲーム画面の準備に失敗しました。HTML要素を確認してください。");
+                    this.disconnectServer();
+                    return;
+                }
+                
+                document.getElementById('my-view-title').textContent = `${this.playerId} (YOUR VIEW: 5x5)`;
+
+                this.showScreen('game');
+                this.render();
+                break;
+
+            case 'GAME_STATE_UPDATE':
+                for (const id in data.players) {
+                    if (this.players[id]) {
+                        this.players[id].update(data.players[id]);
+                    } else {
+                        this.players[id] = new Player(data.players[id]);
+                    }
+                }
+                for (const id in this.players) {
+                    if (!data.players[id]) {
+                        delete this.players[id];
+                    }
+                }
+                
+                this.render();
+                this.updatePlayerStatus();
+                break;
+            case 'WINNER':
+                // WINNERメッセージはGAME_STATE_UPDATEとほぼ同時に来るため、二重処理を防ぐ
+                if (this.players[data.winnerId] && !this.players[data.winnerId].isGoal) {
+                    this.players[data.winnerId].isGoal = true; 
+                    this.completeLevel(data.winnerId);
+                }
+                break;
+            case 'ERROR':
+                alert(`エラー: ${data.message}`);
+                this.disconnectServer();
+                break;
+        }
+    }
+
+    updateLobbyStatus(playersData) {
+        const playerList = document.getElementById('lobby-player-list');
+        const startButton = document.getElementById('start-game-button');
+        const lobbyMessage = document.getElementById('lobby-message');
+        
+        playerList.innerHTML = `<h4>参加プレイヤー (${Object.keys(playersData).length}人):</h4>`;
+
+        const playerIds = Object.keys(playersData).sort();
+
+        playerIds.forEach(id => {
+            const isMe = id === this.playerId;
+            const playerDiv = document.createElement('p');
+            // プレイヤーデータには、自身の初期データ（カラーなど）が含まれている
+            const playerColor = this.players[id]?.color || '#FFFFFF'; 
+
+            playerDiv.style.color = playerColor;
+            playerDiv.style.fontWeight = 'bold';
+            playerDiv.textContent = `▶︎ ${id} ${isMe ? '(あなた)' : ''}`;
+            playerList.appendChild(playerDiv);
+        });
+
+        const playerCount = playerIds.length;
+
+        if (this.isHost) {
+            if (playerCount >= 2) {
+                startButton.style.display = 'block';
+                startButton.disabled = false;
+                lobbyMessage.textContent = "準備完了！[ゲーム開始] または [Enter] キーを押してください。";
+            } else {
+                startButton.style.display = 'none';
+                lobbyMessage.textContent = "他のプレイヤー (2人目) の参加を待っています...";
+            }
+        } 
+        else {
+            startButton.style.display = 'none';
+            lobbyMessage.textContent = "ホストの操作を待っています...";
+        }
+    }
+    
+    showScreen(screenName) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(`${screenName}-screen`).classList.add('active');
+        this.currentScreen = screenName;
+        
+        if (screenName === 'title') {
+            document.getElementById('create-room-button').focus();
+        } else if (screenName === 'clear') {
+            document.getElementById('back-to-select-clear').focus();
+        } else if (screenName === 'lobby' && this.isHost) {
+            const startButton = document.getElementById('start-game-button');
+            if (startButton.style.display !== 'none') {
+                 startButton.focus();
+            }
+        }
+    }
+    
+    requestMove(dx, dy) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN && this.playerId) {
+            this.socket.send(JSON.stringify({
+                type: 'MOVE',
+                dx: dx,
+                dy: dy
+            }));
+            const myPlayer = this.players[this.playerId];
+            if (this.maze.isWall(myPlayer.x + dx, myPlayer.y + dy)) {
+                 playSound('hit');
+            } else {
+                 playSound('move');
+            }
+        }
+    }
 
 
     startGamepadPolling() {
@@ -502,12 +574,11 @@ class MazeGame {
     }
 
     updateGamepadStatus() {
-        // ... (既存の updateGamepadStatus ロジックは変更なし) ...
         const gamepads = navigator.getGamepads();
         let connectedCount = 0;
         
         if (gamepads[0]) connectedCount++;
-        if (gamepads[1]) connectedCount++; // 複数パッド対応を残す
+        if (gamepads[1]) connectedCount++; 
 
         let statusText = `${connectedCount}台のコントローラーが接続されています。`;
         document.getElementById('gamepad-status').textContent = statusText;
@@ -520,7 +591,6 @@ class MazeGame {
         const gamepads = navigator.getGamepads();
         const now = Date.now();
 
-        // 💡 接続されている最初のパッドのみを使用
         this.handleGamepadInput(gamepads[0], now);
     }
 
@@ -552,14 +622,11 @@ class MazeGame {
         }
     }
     
-    // startGame は connectToServer に統合されたため削除
-
-    // 💡 変更: プレイヤーのステータス更新 (動的なUI生成)
     updatePlayerStatus() {
         const statusContainer = document.getElementById('all-player-statuses');
+        if (!statusContainer) return; 
         statusContainer.innerHTML = '';
         
-        // プレイヤーIDでソートして表示
         const sortedPlayerIds = Object.keys(this.players).sort();
         
         sortedPlayerIds.forEach(playerId => {
@@ -568,7 +635,7 @@ class MazeGame {
             
             const isMe = playerId === this.playerId;
             const statusDiv = document.createElement('div');
-            statusDiv.className = 'player-status';
+            statusDiv.className = `player-status ${playerId.toLowerCase()}`;
             statusDiv.style.backgroundColor = player.color;
             statusDiv.style.border = isMe ? '4px solid gold' : 'none';
             
@@ -595,28 +662,29 @@ class MazeGame {
         this.showScreen('clear');
     }
 
-    // 💡 変更: render関数 (自分のビューとミニマップの描画)
     render() {
-        if (!this.maze) return;
-        this.renderMinimap();
-        if (this.playerId) {
+        if (!this.maze || !this.minimapCtx) return; 
+        
+        this.renderMinimap(); 
+        
+        if (this.playerId && this.myCtx) { 
             this.renderPlayerView(this.playerId, this.myCtx, this.myCanvas);
         }
         this.updatePlayerStatus();
     }
 
-    // 💡 変更: ミニマップの描画 (全プレイヤーの探索済み通路と位置を表示)
     renderMinimap() {
         const ctx = this.minimapCtx;
+        if (!ctx) return;
+
         const canvas = this.minimapCanvas;
         const CELL_SIZE = this.mCellSize; 
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
         
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 全プレイヤーの探索済みセルを収集
         const allVisited = new Set();
         Object.values(this.players).forEach(p => {
             p.visitedCells.forEach(cell => allVisited.add(cell));
@@ -629,7 +697,6 @@ class MazeGame {
                 const coord = `${x},${y}`;
                 const isWall = this.maze.isWall(x, y);
 
-                // 探索済みの通路、スタート、ゴールのみを描画
                 if (allVisited.has(coord) && !isWall) {
                     ctx.fillStyle = '#D3D3D3'; 
                     ctx.fillRect(drawX, drawY, CELL_SIZE, CELL_SIZE);
@@ -643,7 +710,6 @@ class MazeGame {
             }
         }
         
-        // 全プレイヤーの描画 (ミニマップ上ではドットで)
         Object.values(this.players).forEach(player => {
             const playerX = player.x * CELL_SIZE;
             const playerY = player.y * CELL_SIZE;
@@ -652,7 +718,6 @@ class MazeGame {
             ctx.fillRect(playerX, playerY, CELL_SIZE, CELL_SIZE);
             
             if (player.id === this.playerId) {
-                // 自身の場合は特別な枠
                 ctx.strokeStyle = 'gold';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(playerX, playerY, CELL_SIZE, CELL_SIZE);
@@ -660,7 +725,6 @@ class MazeGame {
         });
     }
 
-    // 💡 変更: プレイヤーの周囲5x5ビューの描画 (他のプレイヤーも表示)
     renderPlayerView(playerId, ctx, canvas) {
         const player = this.players[playerId];
         if (!player) return;
@@ -684,7 +748,6 @@ class MazeGame {
                 
                 const isWall = this.maze.isWall(mazeX, mazeY);
                 
-                // 迷路の描画
                 if (isWall) {
                     ctx.fillStyle = COLOR_MAP.WALL;
                     ctx.fillRect(drawX, drawY, CELL_SIZE, CELL_SIZE);
@@ -693,7 +756,6 @@ class MazeGame {
                     ctx.fillRect(drawX, drawY, CELL_SIZE, CELL_SIZE);
                 }
                 
-                // スタートとゴールの描画
                 if (mazeX === this.maze.start.x && mazeY === this.maze.start.y) {
                     ctx.fillStyle = COLOR_MAP.START;
                     ctx.fillRect(drawX, drawY, CELL_SIZE, CELL_SIZE);
@@ -703,7 +765,6 @@ class MazeGame {
                     ctx.fillRect(drawX, drawY, CELL_SIZE, CELL_SIZE);
                 }
                 
-                // 💡 他のプレイヤーも描画
                 Object.values(this.players).forEach(p => {
                     if (mazeX === p.x && mazeY === p.y) {
                         ctx.fillStyle = p.color; 
@@ -711,7 +772,6 @@ class MazeGame {
                         ctx.arc(drawX + CELL_SIZE / 2, drawY + CELL_SIZE / 2, CELL_SIZE * 0.4, 0, Math.PI * 2);
                         ctx.fill();
 
-                        // 自身またはゴールしているプレイヤー
                         if (p.id === playerId || p.isGoal) {
                             ctx.strokeStyle = p.id === playerId ? 'white' : 'gold';
                             ctx.lineWidth = 4;
