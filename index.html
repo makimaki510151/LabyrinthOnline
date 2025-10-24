@@ -11,10 +11,12 @@
     <div id="connection-modal" class="screen">
         <div class="title-container">
             <h2 id="connection-title">部屋に参加</h2>
-            <p style="margin-bottom: 10px;"> ngrok使用時は、「ホスト名:ポート番号」を**コロン区切り**で入力してください。</p>
+            <p style="margin-bottom: 10px;"> 
+                **ngrokを使用する場合**: 「ホスト名」（例: `random-id.ngrok-free.app`）を、ローカル接続の場合は「ホスト名:ポート番号」を入力してください。
+            </p>
             <div class="input-group" style="margin-bottom: 25px;">
-                <label for="server-address">ホスト名:ポート番号:</label>
-                <input type="text" id="server-address" placeholder="例: 0.tcp.jp.ngrok.io:19535 または localhost:8080">
+                <label for="server-address">接続アドレス:</label>
+                <input type="text" id="server-address" placeholder="例: massive-yak-4422.ngrok-free.app または localhost:8080">
             </div>
             <button id="connect-submit" class="menu-button">接続して参加</button>
             <button id="connection-cancel" class="menu-button small" style="background: gray; margin-top: 10px;">キャンセル</button>
