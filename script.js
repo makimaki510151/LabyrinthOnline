@@ -56,10 +56,9 @@ const COLOR_MAP = {
 };
 
 
-// 💡 変更なし
+// 💡 MazeGenerator クラスは変更なし
 class MazeGenerator {
     static generate(width, height, startCoords, goalCoords) {
-        // ... (既存の MazeGenerator.generate の内容をそのまま残します) ...
         const GRID_WIDTH = width;
         const GRID_HEIGHT = height;
 
@@ -140,7 +139,7 @@ class MazeGenerator {
 }
 
 
-// 💡 変更なし
+// 💡 Player クラスは変更なし
 class Player {
     constructor(data) {
         this.id = data.id; 
@@ -159,7 +158,7 @@ class Player {
     }
 }
 
-// 💡 変更なし
+// 💡 Maze クラスは変更なし
 class Maze {
     constructor(data) {
         this.width = data.width;
@@ -248,7 +247,7 @@ class MazeGame {
     }
 
     setupEventListeners() {
-        // 💡 修正: アロー関数で囲み、thisの参照をMazeGameインスタンスに固定する
+        // 💡 アロー関数でthisを固定
         document.getElementById('create-room-button').addEventListener('click', () => {
             this.showConnectionModal('host');
         });
@@ -281,27 +280,28 @@ class MazeGame {
         window.addEventListener('keydown', (e) => this.handleKeyboardInput(e));
     }
     
-    // 💡 接続モーダルの表示/非表示ロジック (変更なし)
+    // 💡 修正: 単一の入力フィールドを使用するように変更
     showConnectionModal(type) {
         const modal = document.getElementById('connection-modal');
         const title = document.getElementById('connection-title');
-        const ipInput = document.getElementById('server-ip');
+        const addressInput = document.getElementById('server-address');
         const submitButton = document.getElementById('connect-submit');
-        const portInput = document.getElementById('server-port');
 
         this.isHost = (type === 'host');
         title.textContent = this.isHost ? '部屋を作成 (ホスト)' : '部屋に参加 (ゲスト)';
         submitButton.textContent = this.isHost ? '部屋を作成' : '接続して参加';
-        ipInput.value = ipInput.value || (this.isHost ? 'localhost' : ''); 
 
+        // ホストの場合はデフォルトで localhost:8080 を設定
         if (this.isHost) {
-             portInput.value = 8080;
-        } else if (!portInput.value) {
-             portInput.value = 8080; 
+             addressInput.value = addressInput.value || 'localhost:8080';
+        } else if (!addressInput.value) {
+             // ゲストの場合は ngrokの例をデフォルトで表示 (ただし実際のngrokアドレスはユーザーが入力)
+             addressInput.value = ''; // 空にするか、ngrokの例を記載
         }
-
+        
         document.getElementById('title-screen').classList.remove('active');
         modal.classList.add('active');
+        addressInput.focus();
     }
     
     hideConnectionModal() {
@@ -361,13 +361,29 @@ class MazeGame {
         this.requestMove(dx, dy);
     }
     
+    // 💡 修正: 1行入力からIPとポートを抽出し、プロトコルをwssに修正
     connectToServer() {
-        const ip = document.getElementById('server-ip').value || 'localhost';
-        const port = document.getElementById('server-port').value || '8080'; 
+        const address = document.getElementById('server-address').value.trim();
         
+        // 入力形式をチェック: ホスト名:ポート番号
+        const parts = address.split(':');
+        let ip = '';
+        let port = '';
+
+        if (parts.length === 2 && parts[1].length > 0 && !isNaN(parseInt(parts[1]))) {
+            ip = parts[0];
+            port = parts[1];
+        } else {
+            alert('接続アドレスは「ホスト名:ポート番号」の形式で入力してください。');
+            return;
+        }
+
         if (this.socket) this.socket.close();
 
-        const url = `ws://${ip}:${port}`;
+        // HTTPSページからの接続にはwssが必要。ただしlocalhostからの接続はwsで可能。
+        const protocol = (ip === 'localhost' || ip === '127.0.0.1') ? 'ws' : 'wss'; 
+        
+        const url = `${protocol}://${ip}:${port}`;
         this.socket = new WebSocket(url);
         
         this.socket.onopen = () => {
@@ -392,7 +408,7 @@ class MazeGame {
             document.getElementById('connection-status').textContent = '接続失敗';
             document.getElementById('connection-status').style.color = '#F44336';
             this.socket = null;
-            alert('サーバーへの接続に失敗しました。ホスト名とポート番号を確認してください。');
+            alert('サーバーへの接続に失敗しました。ホスト名とポート番号を確認してください。\nまた、HTTPSページからの接続にはWSSが必要です。');
             this.showScreen('title');
         };
 

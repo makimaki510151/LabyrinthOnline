@@ -11,44 +11,38 @@
     <div id="connection-modal" class="screen">
         <div class="title-container">
             <h2 id="connection-title">部屋に参加</h2>
-            <p style="margin-bottom: 10px;"> ngrok使用時は、ホスト名とngrokのポートを入力してください。</p>
-            <div class="input-group" style="margin-bottom: 15px;">
-                <label for="server-ip">ホスト/IPアドレス:</label>
-                <input type="text" id="server-ip" placeholder="localhost または 0.tcp.jp.ngrok.io">
-            </div>
+            <p style="margin-bottom: 10px;"> ngrok使用時は、「ホスト名:ポート番号」を**コロン区切り**で入力してください。</p>
             <div class="input-group" style="margin-bottom: 25px;">
-                <label for="server-port">ポート番号:</label>
-                <input type="number" id="server-port" value="8080" placeholder="8080 または ngrokの5桁ポート">
+                <label for="server-address">ホスト名:ポート番号:</label>
+                <input type="text" id="server-address" placeholder="例: 0.tcp.jp.ngrok.io:19535 または localhost:8080">
             </div>
             <button id="connect-submit" class="menu-button">接続して参加</button>
             <button id="connection-cancel" class="menu-button small" style="background: gray; margin-top: 10px;">キャンセル</button>
-            <p id="connection-status" style="margin-top: 15px; font-weight: bold;"></p>
         </div>
     </div>
-
+    
     <div id="title-screen" class="screen active">
         <div class="title-container">
             <h1>2P迷路レース</h1>
-            <button id="create-room-button" class="menu-button">部屋を作成 (ホスト)</button>
-            <button id="join-room-button" class="menu-button">部屋に参加 (ゲスト)</button>
+            <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 15px;">
+                <button id="create-room-button" class="menu-button">部屋を作成 (ホスト)</button>
+                <button id="join-room-button" class="menu-button">部屋に参加 (ゲスト)</button>
+            </div>
+            <div id="connection-status" style="margin-top: 20px; font-weight: bold; color: #764ba2;">未接続</div>
         </div>
     </div>
 
     <div id="lobby-screen" class="screen">
-        <div class="title-container">
-            <h2>対戦待機ロビー</h2>
-            <p>他のプレイヤーの参加を待っています...</p>
-
-            <div id="lobby-player-list" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: 300px; text-align: left;">
-                <p>プレイヤーリスト:</p>
-            </div>
-
-            <p id="lobby-message" style="margin-bottom: 20px; font-weight: bold; color: #333;"></p>
-            
-            <button id="start-game-button" class="menu-button" style="padding: 20px 40px; font-size: 1.5rem; display: none;">ゲーム開始 (Enter)</button>
-            <button id="lobby-disconnect-button" class="menu-button small" style="background: gray; margin-top: 10px;">切断してタイトルに戻る</button>
+        <div class="title-container" style="max-width: 600px;">
+            <h2>準備部屋 (Lobby)</h2>
+            <div id="lobby-player-list" style="text-align: left; margin-top: 20px; min-height: 100px;">
+                </div>
+            <p id="lobby-message" style="font-weight: bold; color: #F44336; margin: 20px 0;">ホストの操作を待っています...</p>
+            <button id="start-game-button" class="menu-button" style="display: none; margin-top: 10px;">ゲーム開始</button>
+            <button id="lobby-disconnect-button" class="menu-button small" style="background: gray; margin-top: 20px;">切断してタイトルに戻る</button>
         </div>
     </div>
+
     <div id="game-screen" class="screen">
         <div class="game-container">
             <div class="game-header">
@@ -58,8 +52,8 @@
             
             <div class="game-main-tri-view">
                 
-                <div class="player-view-container">
-                    <h3 id="my-view-title">PLAYER X (5x5 View)</h3>
+                <div class="player-view-container my-view">
+                    <h3 id="my-view-title">PLAYER X (YOUR VIEW: 5x5)</h3>
                     <canvas id="my-canvas" class="player-canvas" width="450" height="450"></canvas>
                 </div>
 
