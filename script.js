@@ -200,7 +200,7 @@ class MazeGame {
         this.minimapCanvas = null;
         this.minimapCtx = null;
         
-        this.mazeSize = 45; 
+        this.mazeSize = 65; 
         this.pViewSize = 5; 
         this.pCellSize = 450 / this.pViewSize; 
         this.mCellSize = 450 / this.mazeSize; 
