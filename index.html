@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オンライン迷路レース</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div id="title-screen" class="screen active">
+        <div class="title-container">
+            <h1>オンライン迷路レース</h1>
+            <p id="connection-status" style="margin-bottom: 20px; font-weight: bold; color: #333;">未接続</p>
+            <button id="create-room-button" class="menu-button">部屋を作成 (ホスト)</button>
+            <button id="join-room-button" class="menu-button">部屋に参加 (ゲスト)</button>
+        </div>
+    </div>
+    
+    <div id="connection-modal" class="screen modal-overlay">
+        <div class="modal-content">
+            <h2 id="connection-title">部屋を作成 (ホスト)</h2>
+            <label for="server-ip">サーバーIPアドレス:</label>
+            <input type="text" id="server-ip" placeholder="例: localhost または 192.168.x.x">
+            <p>ポート: 8080 (固定)</p>
+            <button id="connect-submit" class="menu-button">接続</button>
+            <button id="connection-cancel" class="menu-button small">キャンセル</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="game-container">
+            <div class="game-header">
+                <button id="back-to-title" class="menu-button small">タイトルに戻る (切断)</button>
+                <span id="current-level">45x45 オンラインレース</span>
+            </div>
+            
+            <div class="game-main-tri-view">
+                
+                <div class="player-view-container my-view">
+                    <h3 id="my-view-title">YOUR VIEW (5x5 View)</h3>
+                    <canvas id="my-canvas" class="player-canvas" width="450" height="450"></canvas>
+                </div>
+
+                <div class="center-panel">
+                    <h3>全体マップ (探索済み通路)</h3>
+                    <div class="maze-container">
+                        <canvas id="minimap-canvas" width="450" height="450"></canvas> 
+                    </div>
+
+                    <div class="game-sidebar">
+                        
+                        <div id="all-player-statuses">
+                            <div class="player-status p1">
+                                <h2>PLAYER X (YOU)</h2>
+                                <p>ステータス: 走行中</p>
+                            </div>
+                        </div>
+
+                        <div class="gamepad-info">
+                            <h3>操作説明</h3>
+                            <p>移動: WASD / 矢印キー</p>
+                            <p>移動: ゲームパッド 十字キー / 左スティック</p>
+                            <p id="gamepad-status">コントローラー接続を確認中...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                </div>
+        </div>
+    </div>
+
+    <div id="clear-screen" class="screen">
+        <div class="clear-container">
+            <h2 id="winner-title">レース終了！</h2>
+            <p id="clear-message">PLAYER X の勝利です！</p>
+            <button id="back-to-select-clear" class="menu-button">タイトルに戻る</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
