@@ -280,7 +280,7 @@ class MazeGame {
         window.addEventListener('keydown', (e) => this.handleKeyboardInput(e));
     }
     
-    // 💡 修正: 単一の入力フィールドを使用するように変更
+    // 💡 修正なし
     showConnectionModal(type) {
         const modal = document.getElementById('connection-modal');
         const title = document.getElementById('connection-title');
@@ -361,29 +361,49 @@ class MazeGame {
         this.requestMove(dx, dy);
     }
     
-    // 💡 修正: 1行入力からIPとポートを抽出し、プロトコルをwssに修正
+    // 💡 修正: ngrokのHTTPトンネルに対応するため、ポートなしの形式を許容し、URL構築ロジックを調整
     connectToServer() {
         const address = document.getElementById('server-address').value.trim();
         
-        // 入力形式をチェック: ホスト名:ポート番号
         const parts = address.split(':');
         let ip = '';
         let port = '';
 
         if (parts.length === 2 && parts[1].length > 0 && !isNaN(parseInt(parts[1]))) {
+            // 例: localhost:8080 や 0.tcp.jp.ngrok.io:19535 の形式
             ip = parts[0];
             port = parts[1];
+        } else if (parts.length === 1) {
+            // 例: massive-yak-4422.ngrok-free.app の形式 (ngrokのhttpトンネル)
+            ip = parts[0];
+            // HTTPS/WSSの標準ポートである443と見なすが、URLには含めない
+            port = '443'; 
         } else {
-            alert('接続アドレスは「ホスト名:ポート番号」の形式で入力してください。');
+            alert('接続アドレスは「ホスト名:ポート番号」または「ホスト名」の形式で入力してください。');
             return;
         }
 
         if (this.socket) this.socket.close();
 
-        // HTTPSページからの接続にはwssが必要。ただしlocalhostからの接続はwsで可能。
-        const protocol = (ip === 'localhost' || ip === '127.0.0.1') ? 'ws' : 'wss'; 
+        // プロトコルの決定: localhost以外はwss
+        const isSecureHost = ip !== 'localhost' && ip !== '127.0.0.1';
+        const protocol = isSecureHost ? 'wss' : 'ws'; 
         
-        const url = `${protocol}://${ip}:${port}`;
+        let url;
+        
+        // WSSの標準ポート443 (またはポート指定なし) の場合、URLにポート番号を含めない
+        if (isSecureHost && (port === '443' || parts.length === 1)) {
+            url = `${protocol}://${ip}`;
+        } 
+        // WSの標準ポート80 (またはポート指定なし) の場合、URLにポート番号を含めない
+        else if (!isSecureHost && (port === '80' || parts.length === 1)) {
+             url = `${protocol}://${ip}`;
+        }
+        // ポート番号が指定されている、または標準ポート以外の場合
+        else {
+            url = `${protocol}://${ip}:${port}`;
+        }
+
         this.socket = new WebSocket(url);
         
         this.socket.onopen = () => {
@@ -408,7 +428,7 @@ class MazeGame {
             document.getElementById('connection-status').textContent = '接続失敗';
             document.getElementById('connection-status').style.color = '#F44336';
             this.socket = null;
-            alert('サーバーへの接続に失敗しました。ホスト名とポート番号を確認してください。\nまた、HTTPSページからの接続にはWSSが必要です。');
+            alert('サーバーへの接続に失敗しました。ホスト名とポート番号を確認してください。\nまた、ngrokを使用する場合は「ngrok http 8080」で起動し、「<ランダムID>.ngrok-free.app」を入力してください。');
             this.showScreen('title');
         };
 
